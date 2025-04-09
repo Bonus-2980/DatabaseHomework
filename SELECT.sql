@@ -1,12 +1,11 @@
-select title, duration
+SELECT title, duration
 FROM Tracks
 ORDER BY duration DESC
 LIMIT 1;
 
 SELECT title, duration
 FROM Tracks
-WHERE (CAST(substr(duration, 1, position(':' in duration) - 1) AS INTEGER) * 60 +
-       CAST(substr(duration, position(':' in duration) + 1) AS INTEGER)) >= 210;
+WHERE duration >= TIME '00:03:30';
 
 SELECT title
 FROM Collections
@@ -18,7 +17,8 @@ WHERE name NOT LIKE '% %';
 
 SELECT title
 FROM Tracks
-WHERE title ILIKE '%my%' OR title ILIKE '%мой%';
+WHERE string_to_array(lower(title), ' ') && ARRAY['my', 'мой'];
+
 
 SELECT 
     g.name AS genre,
@@ -32,15 +32,12 @@ FROM Tracks t
 JOIN Albums a ON t.album_id = a.id
 WHERE a.release_year BETWEEN 2019 AND 2020;
 
-SELECT
-    a.title,
-    AVG(
-        CAST(SUBSTRING(t.duration, 1, POSITION(':' IN t.duration) - 1) AS INTEGER) * 60 +
-        CAST(SUBSTRING(t.duration, POSITION(':' IN t.duration) + 1) AS INTEGER)
-    ) AS avg_duration_seconds
+
+SELECT a.title, make_interval(secs => ROUND(AVG(EXTRACT(EPOCH FROM t.duration)))) AS avg_duration
 FROM Albums a
 JOIN Tracks t ON a.id = t.album_id
 GROUP BY a.title;
+
 
 SELECT a.name
 FROM Artists a
@@ -60,12 +57,13 @@ JOIN Artist_Album aa ON a.id = aa.album_id
 JOIN Artists ar ON aa.artist_id = ar.id
 WHERE ar.name = 'Michael Jackson';
 
-SELECT a.title
+SELECT DISTINCT a.title
 FROM Albums a
 JOIN Artist_Album aa ON a.id = aa.album_id
 JOIN Artist_Genre ag ON aa.artist_id = ag.artist_id
-GROUP BY a.title
+GROUP BY a.title, aa.artist_id
 HAVING COUNT(DISTINCT ag.genre_id) > 1;
+
 
 SELECT title
 FROM Tracks
@@ -75,20 +73,15 @@ WHERE id NOT IN (
 );
 
 WITH min_duration AS (
-  SELECT MIN(
-      CAST(SUBSTRING(duration, 1, POSITION(':' IN duration) - 1) AS INTEGER) * 60 +
-      CAST(SUBSTRING(duration, POSITION(':' IN duration) + 1) AS INTEGER)
-  ) AS min_dur
-  FROM Tracks
+    SELECT MIN(duration) AS min_dur
+    FROM Tracks
 )
 SELECT DISTINCT ar.name
 FROM Artists ar
 JOIN Artist_Album aa ON ar.id = aa.artist_id
 JOIN Albums al ON aa.album_id = al.id
 JOIN Tracks t ON al.id = t.album_id
-JOIN min_duration md ON 1=1
-WHERE (CAST(SUBSTRING(t.duration, 1, POSITION(':' IN t.duration) - 1) AS INTEGER) * 60 +
-       CAST(SUBSTRING(t.duration, POSITION(':' IN t.duration) + 1) AS INTEGER)) = md.min_dur;
+JOIN min_duration md ON t.duration = md.min_dur;
 
 WITH track_counts AS (
   SELECT 

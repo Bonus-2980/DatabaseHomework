@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS Artist_Album (
 CREATE TABLE IF NOT EXISTS Tracks (
     id INTEGER PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
-    duration VARCHAR(20) NOT NULL,
+    duration TIME NOT NULL,
     album_id INTEGER NOT NULL,
     FOREIGN KEY (album_id) REFERENCES Albums(id)
 );
@@ -50,3 +50,6 @@ CREATE TABLE IF NOT EXISTS Track_Collection (
     FOREIGN KEY (track_id) REFERENCES Tracks(id),
     FOREIGN KEY (collection_id) REFERENCES Collections(id)
 );
+ALTER TABLE Tracks
+ALTER COLUMN duration TYPE TIME
+USING duration::TIME;
